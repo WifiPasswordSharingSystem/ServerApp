@@ -1,3 +1,4 @@
 {
-	"Port": 2222
+	"Port": 2222,
+	"Collection" : "wifiCollection"
 }
