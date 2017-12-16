@@ -16,10 +16,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.bson.Document;
+import org.json.simple.JSONArray;
 
 public class Server implements Runnable {
     static List<Socket> clients;
-    private MongoCollection<org.bson.Document> collection;
+    private JSONArray collection;
     public class Handler implements Runnable {
         Socket sock;
         InputStream is;
@@ -42,14 +43,18 @@ public class Server implements Runnable {
                     String command = (String) jsonObject.get("Command");
                     switch (command){
                         case "ADD":
-                            Map<String,Object> hMap = new HashMap();
-                            hMap.put("SSID", (String)jsonObject.get("SSID"));
-                            hMap.put("PASSWORD", (String)jsonObject.get("PASSWORD"));
-                            collection.insertOne(new Document(hMap));
+                            JSONObject object = new JSONObject();
+                            object.put("SSID", (String)jsonObject.get("SSID"));
+                            object.put("PASSWORD", (String)jsonObject.get("PASSWORD"));
+                            collection.add(object);
+                            writeToFile();
                            break;
                         case "GET":
                             
                             break;
+                        case "LIST":
+
+                        	break;
                     }
                 }
             }catch (Exception e){
@@ -59,19 +64,31 @@ public class Server implements Runnable {
         }
     }
 
+    void writeToFile(){
+        JSONObject obj = new JSONObject();
+        try(FileWriter file = new FileWriter("settings.json")){
+            obj.put("Port", 2222);
+            obj.put("Collection", collection);
+            file.write(obj.toJSONString());
+            file.flush();
+        }catch(Exception e){
+            System.err.println(e.getMessage());
+        }
+    }
 
     @Override
     public void run() {
         JSONParser parser = new JSONParser();
         clients = new ArrayList<>();
         try {
-            MongoClient client = new MongoClient();
-            MongoDatabase db = client.getDatabase("wifi");
             Object obj = parser.parse(new FileReader("settings.json"));
             JSONObject jsonObject = (JSONObject) obj;
             long port = (long)jsonObject.get("Port");
-            String collectString = (String)jsonObject.get("Collection");
-            collection = db.getCollection(collectString);
+            Object js = jsonObject.get("Collection");
+            if(js != null)
+                collection = (JSONArray) js;
+            else
+                collection = new JSONArray();
             System.out.println(Inet4Address.getLocalHost().getHostAddress());
             System.out.println(port);
             ServerSocket serverSocket = new ServerSocket(new Long(port).intValue());
