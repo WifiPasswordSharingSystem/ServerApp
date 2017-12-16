@@ -1,21 +1,13 @@
 package com.WifiPasswordSharingSystem;
 
-import javafx.util.Pair;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-import com.mongodb.*;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
 import java.io.*;
 import java.net.Inet4Address;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import org.bson.Document;
 import org.json.simple.JSONArray;
 
 public class Server implements Runnable {
@@ -34,6 +26,8 @@ public class Server implements Runnable {
         @Override
         public void run() {
             try {
+                boolean status = false;
+                JSONObject send = null;
                 while (true){
                     byte[] data = new byte[512];
                     is.read(data);
@@ -50,7 +44,26 @@ public class Server implements Runnable {
                             writeToFile();
                            break;
                         case "GET":
-                            
+                            String ssid = (String)jsonObject.get("SSID");
+                            for(Object tmpObject : collection){
+                                JSONObject jsonItem = (JSONObject) tmpObject;
+                                if(jsonItem.get("SSID").equals(ssid)){
+                                    status = true;
+                                    String pwd = (String) jsonItem.get("PASSWORD");
+                                    send = new JSONObject();
+                                    send.put("Command", "ACCEPT");
+                                    send.put("SSID", ssid);
+                                    send.put("PASSWORD", pwd);
+                                    break;
+                                }
+                            }
+                            if(status){
+                                send.put("STATUS", "Done");
+                                status = false;
+                            }else{
+                                send.put("STATUS", "Fail");
+                            }
+                            os.write(send.toJSONString().getBytes());
                             break;
                         case "LIST":
 
