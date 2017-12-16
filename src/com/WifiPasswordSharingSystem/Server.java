@@ -64,10 +64,8 @@ public class Server implements Runnable {
                                 send.put("STATUS", "Fail");
                             }
                             os.write(send.toJSONString().getBytes());
+                            os.flush();
                             break;
-                        case "LIST":
-
-                        	break;
                     }
                 }
             }catch (Exception e){
